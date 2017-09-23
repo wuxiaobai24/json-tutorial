@@ -19,61 +19,72 @@ static int test_pass = 0;
     } while(0)
 
 #define EXPECT_EQ_INT(expect, actual) EXPECT_EQ_BASE((expect) == (actual), expect, actual, "%d")
+#define EXPECT_EQ_DOUBLE(expect,actual) EXPECT_EQ_BASE((expect) == (actual), expect, actual,"%lf")
 
+#define TEST_ERROR(error,json) \
+	do {\
+		lept_value v;\
+		v.type = LEPT_FALSE; \
+		EXPECT_EQ_INT(LEPT_PARSE_OK,lept_parse(&v,json));\
+		EXPECT_EQ_INT(error,lept_get_type(&v));\
+	}while(0)
 
+#define TEST_NUMBER(except, json) \
+	do {\
+		lept_value v;\
+		v.type = LEPT_FALSE;\
+		EXPECT_EQ_INT(LEPT_PARSE_OK,lept_parse(&v,json));\
+		EXPECT_ER_INT(LEPT_NUMBER,let_get_type(&v) );\
+		EXPECT_EQ_DOUBLE(except,lept_get_number(&v));\
+	}while(0)
 
 static void test_parse_null() {
-    lept_value v;
-    v.type = LEPT_FALSE;
-    EXPECT_EQ_INT(LEPT_PARSE_OK, lept_parse(&v, "null"));
-    EXPECT_EQ_INT(LEPT_NULL, lept_get_type(&v));
+	TEST_ERROR(LEPT_NULL, "null");
 }
 
 static void test_parse_true() {
-	lept_value v;
-	v.type = LEPT_FALSE;
-	EXPECT_EQ_INT(LEPT_PARSE_OK, lept_parse(&v, "true") );
-	EXPECT_EQ_INT(LEPT_TRUE, lept_get_type(&v));
-}
+	TEST_ERROR(LEPT_TRUE, "true");
 
 static void test_parse_false() {
-	lept_value v;
-	v.type = LEPT_TRUE;
-	EXPECT_EQ_INT(LEPT_PARSE_OK, lept_parse(&v, "false"));
-	EXPECT_EQ_INT(LEPT_FALSE, lept_get_type(&v));
+	TEST_ERROR(LEPT_FALSE, "false");
 }
 
 static void test_parse_expect_value() {
-    lept_value v;
-
-    v.type = LEPT_FALSE;
-    EXPECT_EQ_INT(LEPT_PARSE_EXPECT_VALUE, lept_parse(&v, ""));
-    EXPECT_EQ_INT(LEPT_NULL, lept_get_type(&v));
-
-    v.type = LEPT_FALSE;
-    EXPECT_EQ_INT(LEPT_PARSE_EXPECT_VALUE, lept_parse(&v, " "));
-    EXPECT_EQ_INT(LEPT_NULL, lept_get_type(&v));
+	TEST_ERROR(LEPT_NULL, " ");
+	TEST_ERROR(LEPT_NULL, "");
 }
 
 static void test_parse_invalid_value() {
-    lept_value v;
-    v.type = LEPT_FALSE;
-    EXPECT_EQ_INT(LEPT_PARSE_INVALID_VALUE, lept_parse(&v, "nul"));
-    EXPECT_EQ_INT(LEPT_NULL, lept_get_type(&v));
+	TEST_ERROR(LEPT_NULL, "?");
+	TEST_ERROR(LEPT_NULL, "nul");
 
-    v.type = LEPT_FALSE;
-    EXPECT_EQ_INT(LEPT_PARSE_INVALID_VALUE, lept_parse(&v, "?"));
-    EXPECT_EQ_INT(LEPT_NULL, lept_get_type(&v));
+	TEST_ERROR()
 }
 
 static void test_parse_root_not_singular() {
-    lept_value v;
-    v.type = LEPT_FALSE;
-    EXPECT_EQ_INT(LEPT_PARSE_ROOT_NOT_SINGULAR, lept_parse(&v, " null x"));
-    EXPECT_EQ_INT(LEPT_NULL, lept_get_type(&v));
+	TEST_ERROR(LEPT_NULL, "null x");
+}
 
-	//v.type = LEPT_FALSE;
-	//EXPECT_EQ_INT(LEPT_PARSE_ROOT_NOT_SINGULAR, lept_parse(&v, ""))
+static void test_parse_number() {
+	TEST_NUMBER(0.0, "0");
+	TEST_NUMBER(0.0, "-0");
+	TEST_NUMBER(0.0, "-0.0");
+	TEST_NUMBER(1.0, "1");
+	TEST_NUMBER(-1.0, "-1");
+	TEST_NUMBER(1.5, "1.5");
+	TEST_NUMBER(-1.5, "-1.5");
+	TEST_NUMBER(3.1415926, "3.1415926");
+	TEST_NUMBER(1E10, "1E10");
+	TEST_NUMBER(1e10, "1e10");
+	TEST_NUMBER(1E+10, "1E+10");
+	TEST_NUMBER(1E-10, "1E-10");
+	TEST_NUMBER(-1E10, "-1E10");
+	TEST_NUMBER(-1e10, "-1e10");
+	TEST_NUMBER(-1E+10, "-1E+10");
+	TEST_NUMBER(-1E-10, "-1E-10");
+	TEST_NUMBER(1.234E+10, "1.234E+10");
+	TEST_NUMBER(1.234E-10, "1.234E-10");
+	TEST_NUMBER(0.0, "1e-100000");
 }
 
 
